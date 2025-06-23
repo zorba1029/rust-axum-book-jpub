@@ -7,8 +7,9 @@ use axum::http::StatusCode;
 use axum_extra::{TypedHeader, headers::{ContentType, ContentLength}};
 
 // ----------------------------------
-// Request Body extract 사용 예
-// Multipart body - POST http://localhost:8000/
+// Axum Response 사용 예
+// Json<Message>, Json<Value>, Json<Inventory> 
+// - GET http://localhost:8000/handler  
 // ----------------------------------
 #[derive(Debug, Serialize)]
 struct Message {
@@ -104,7 +105,8 @@ async fn hello_handler_inventory_status_code() -> (StatusCode, Json<Inventory>) 
     )
 }
 
-pub async fn hello_handler_nested_header_status_code() -> (TypedHeader<ContentType>, (StatusCode, Json<Value>)) {
+pub async fn hello_handler_nested_header_status_code() 
+-> (TypedHeader<ContentType>, (StatusCode, Json<Value>)) {
     (
         TypedHeader(ContentType::json()),
         (

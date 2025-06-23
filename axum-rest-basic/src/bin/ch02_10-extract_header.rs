@@ -3,8 +3,8 @@ use axum::routing::get;
 use axum::http::header::{HeaderMap, CONTENT_TYPE, USER_AGENT};
 
 // ----------------------------------
-// Request Body extract 사용 예
-// Multipart body - POST http://localhost:8000/
+// Request Header extract 사용 예
+// HeaderMap  - POST http://localhost:8000/
 // ----------------------------------
 async fn hello_header(headers: HeaderMap) -> String {
     let user_agent = headers
