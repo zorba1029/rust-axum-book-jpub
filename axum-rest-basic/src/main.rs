@@ -3,8 +3,6 @@
 // Plain String body - POST http://localhost:8000/
 // ----------------------------------
 use axum::{routing::post, Router};
-use axum::extract::Json;
-use serde::{Deserialize, Serialize};
 
 async fn hello_string_body(name: String) -> String {
     format!("hello string body : {}", name)
