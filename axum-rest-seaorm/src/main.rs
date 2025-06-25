@@ -49,3 +49,39 @@ async fn main() {
 
     axum::serve(listener, app).await.unwrap();
 }
+
+//----------------------------------
+// > tree ./axum-rest-seaorm -L 3 -a -I "target"
+// ./axum-rest-seaorm
+// ├── .env
+// ├── .env-example
+// ├── Cargo.lock
+// ├── Cargo.toml
+// ├── migration
+// │   ├── Cargo.lock
+// │   ├── Cargo.toml
+// │   ├── README.md
+// │   └── src
+// │       ├── lib.rs
+// │       ├── m20250624_091523_create_table.rs
+// │       └── main.rs
+// └── src
+//     ├── api
+//     │   ├── category.rs
+//     │   ├── mod.rs
+//     │   ├── product.rs
+//     │   └── users.rs
+//     ├── db
+//     │   ├── init.rs
+//     │   └── mod.rs
+//     ├── entities
+//     │   ├── category.rs
+//     │   ├── mod.rs
+//     │   ├── prelude.rs
+//     │   ├── product.rs
+//     │   └── users.rs
+//     ├── main.rs
+//     ├── swagger.rs
+//     └── utils
+//         ├── app_error.rs
+//         └── mod.rs
