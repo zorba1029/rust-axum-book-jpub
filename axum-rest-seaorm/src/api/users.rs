@@ -4,9 +4,7 @@ use axum::{extract::{Query, State}, http::StatusCode, Json};
 use sea_orm::{
     ColumnTrait, Condition, DatabaseConnection, EntityTrait, 
     QueryFilter, QueryOrder, Order,
-};
-use sea_orm::{
-    ActiveModelTrait, ActiveValue
+    ActiveModelTrait, ActiveValue, ModelTrait
 };
 use crate::entities::users::{ActiveModel, Column, Entity, Model};
 use crate::utils::app_error::AppError;
@@ -171,9 +169,9 @@ pub struct UpsertModel {
 #[utoipa::path(
     post,
     path = "/users",
-    request_body = UpsertModel,
+    request_body = inline(UpsertModel),
     responses(
-        (status = 200, description = "User created", body = UserSchema),
+        (status = 200, description = "User created", body = Model),
         (status = 400, description = "Invalid input", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse)
     ),
@@ -215,9 +213,9 @@ pub async fn post_user(
 #[utoipa::path(
     put,
     path = "/users",
-    request_body = UpsertModel,
+    request_body = inline(UpsertModel),
     responses(
-        (status = 200, description = "User updated", body = UserSchema),
+        (status = 200, description = "User updated", body = Model),
         (status = 400, description = "Invalid input", body = ErrorResponse),
         (status = 404, description = "User not found", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse)
@@ -285,33 +283,33 @@ pub async fn put_user(
 )]
 pub async fn delete_user_handler(
     State(conn): State<DatabaseConnection>,
-    Query(params): Query<HashMap<String, String>>,
+    Query(params): Query<DeleteParams>,
 ) -> Result<Json<&'static str>, AppError> {
     delete_user(State(conn), Query(params)).await
 }
 
 pub async fn delete_user(
     State(conn): State<DatabaseConnection>,
-    Query(params): Query<HashMap<String, String>>,
+    Query(params): Query<DeleteParams>,
 ) -> Result<Json<&'static str>, AppError> {
-    let id = match params.get("id") {
-        Some(id) => id,
-        None => {
-            return Err(AppError::new(
-                StatusCode::BAD_REQUEST,
-                "User ID not provided"
-            ));
-        }
-    };
-
-    let user_id = id.parse::<i32>()
+    let user_id = params.id.parse::<i32>()
         .map_err(|_| AppError::new(
             StatusCode::BAD_REQUEST,
             "User ID must be an integer"
         ))?;
 
-    match Entity::delete_by_id(user_id).exec(&conn).await {
-        Ok(_) => Ok(Json("User deleted")),
+    // user_id가 존재하는지 확인
+    let user_to_delete = Entity::find_by_id(user_id)
+        .one(&conn)
+        .await
+        .map_err(|_| AppError::new(StatusCode::INTERNAL_SERVER_ERROR, "Database error"))?
+        .ok_or_else(|| AppError::new(StatusCode::NOT_FOUND, "User not found"))?;
+
+    match user_to_delete.delete(&conn).await {
+        Ok(_) => {
+            println!("User deleted: {}", user_id);
+            Ok(Json("User deleted"))
+        },
         Err(_) => Err(AppError::new(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Database error"

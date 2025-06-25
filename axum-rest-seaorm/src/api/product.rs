@@ -84,7 +84,7 @@ pub async fn get_product(
 #[utoipa::path(
     post,
     path = "/product",
-    request_body = UpsertModel,
+    request_body = inline(UpsertModel),
     responses(
         (status = 200, description = "Product created", body = Model),
         (status = 500, description = "Internal server error", body = ErrorResponse)
@@ -122,7 +122,7 @@ pub async fn post_product(
 #[utoipa::path(
     put,
     path = "/product",
-    request_body = UpsertModel,
+    request_body = inline(UpsertModel),
     responses(
         (status = 200, description = "Product updated", body = Model),
         (status = 404, description = "Product not found", body = ErrorResponse),

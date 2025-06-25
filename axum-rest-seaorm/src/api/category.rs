@@ -11,8 +11,7 @@ use sea_orm::{
 
 use crate::entities::category::{ActiveModel, Column, Entity, Model};
 use crate::utils::app_error::AppError;
-use utoipa::{Path, ToSchema};
-// use utoipa::Path;
+use utoipa::ToSchema;
 
 // Wrapper functions for OpenAPI documentation
 #[utoipa::path(
@@ -22,7 +21,7 @@ use utoipa::{Path, ToSchema};
         ("name" = Option<String>, Query, description = "Category name to search")
     ),
     responses(
-        (status = 200, description = "List of categories", body = Vec<CategorySchema>),
+        (status = 200, description = "List of categories", body = Vec<Model>),
         (status = 500, description = "Internal server error", body = ErrorResponse)
     ),
     tag = "Categories"
@@ -62,9 +61,9 @@ pub struct UpsertModel {
 #[utoipa::path(
     post,
     path = "/categories",
-    request_body = UpsertCategorySchema,
+    request_body = inline(UpsertModel),
     responses(
-        (status = 200, description = "Category created", body = CategorySchema),
+        (status = 200, description = "Category created", body = Model),
         (status = 500, description = "Internal server error", body = ErrorResponse)
     ),
     tag = "Categories"

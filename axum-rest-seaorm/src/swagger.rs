@@ -33,9 +33,8 @@ pub struct ErrorResponse {
             crate::entities::category::Model,
             
             // API 요청/응답 스키마 (핸들러에 정의)
-            crate::api::users::UpsertModel,
-            crate::api::product::UpsertModel,
-            crate::api::category::UpsertModel,
+            crate::api::users::QueryParams,
+            crate::api::users::DeleteParams,
             
             // 공통 에러 응답
             ErrorResponse
@@ -47,7 +46,7 @@ pub struct ErrorResponse {
         description = "REST API built with Axum and SeaORM",
         contact(
             name = "API Support",
-            email = "support@example.com"
+            email = "zorbahouse@yahoo.com"
         )
     ),
     servers(

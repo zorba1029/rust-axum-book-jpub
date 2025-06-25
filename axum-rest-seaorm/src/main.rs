@@ -4,7 +4,7 @@ mod api;
 mod utils;
 mod swagger;
 
-use axum::{routing::{get, post, put, delete}, Router};
+use axum::{routing::get, Router};
 use sea_orm::DatabaseConnection;
 use tokio::net::TcpListener;
 use utoipa::OpenApi;
