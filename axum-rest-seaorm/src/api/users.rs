@@ -5,19 +5,17 @@ use sea_orm::{
     ColumnTrait, Condition, DatabaseConnection, EntityTrait, 
     QueryFilter, QueryOrder, Order,
 };
-// use sea_orm::{
-//     ActiveModelTrait, ActiveValue
-// };
+use sea_orm::{
+    ActiveModelTrait, ActiveValue
+};
 use crate::entities::users::{ActiveModel, Column, Entity, Model};
-use crate::utils::AppError;
+use crate::utils::app_error::AppError;
 
 
 pub async fn get_user(
     Query(params): Query<HashMap<String, String>>,
     State(conn): State<DatabaseConnection>,
-// ) -> Json<Model> {
 ) -> Result<Json<Model>, AppError> {
-    // let conn = Database::connect(DATABASE_URL).await.unwrap();
     let mut condition = Condition::any();
 
     if let Some(id) = params.get("id") {
@@ -64,8 +62,8 @@ pub async fn get_user(
 }
 
 pub async fn get_users(
-    Query(params): Query<HashMap<String, String>>,
     State(conn): State<DatabaseConnection>,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<Vec<Model>>, AppError> {
     let mut condition = Condition::all();
 
@@ -102,3 +100,103 @@ pub async fn get_users(
     }
 }
 
+#[derive(serde::Deserialize)]
+pub struct UpsertModel {
+    id: Option<i32>,
+    username: Option<String>,
+    password: Option<String>,
+}
+
+pub async fn post_user(
+    State(conn): State<DatabaseConnection>,
+    Json(user): Json<UpsertModel>,
+) -> Result<Json<Model>, AppError> {
+    if user.username.is_none() || user.password.is_none() {
+        return Err(AppError::new(
+            StatusCode::BAD_REQUEST,
+            "Username or password not provided"
+        ));
+    }
+
+    let new_user = ActiveModel {
+        id: ActiveValue::NotSet,
+        username: ActiveValue::Set(user.username.unwrap()),
+        password: ActiveValue::Set(user.password.unwrap()),
+    };
+
+    match new_user.insert(&conn).await {
+        Ok(result) => Ok(Json(result)),
+        Err(_) => Err(AppError::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error"
+        )),
+    }
+}
+
+pub async fn put_user(
+    State(conn): State<DatabaseConnection>,
+    Json(user): Json<UpsertModel>,
+) -> Result<Json<Model>, AppError> {
+    let id = match user.id {
+        Some(id) => id,
+        None => {
+            return Err(AppError::new(
+                StatusCode::BAD_REQUEST,
+                "ID not provided"
+            ));
+        }
+    };
+
+    let found_user = match Entity::find_by_id(id).one(&conn).await {
+        Ok(user) => user.ok_or(AppError::new(
+            StatusCode::NOT_FOUND,
+            "User not found"
+        ))?,
+        Err(_) => return Err(AppError::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error"
+        )),
+    };
+
+    let mut active_user: ActiveModel = found_user.into();
+
+    active_user.username = user.username.map(ActiveValue::Set).unwrap_or(active_user.username);
+    active_user.password = user.password.map(ActiveValue::Set).unwrap_or(active_user.password);
+
+    match active_user.update(&conn).await {
+        Ok(result) => Ok(Json(result)),
+        Err(_) => Err(AppError::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error"
+        )),
+    }
+}
+
+pub async fn delete_user(
+    State(conn): State<DatabaseConnection>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<&'static str>, AppError> {
+    let id = match params.get("id") {
+        Some(id) => id,
+        None => {
+            return Err(AppError::new(
+                StatusCode::BAD_REQUEST,
+                "User ID not provided"
+            ));
+        }
+    };
+
+    let user_id = id.parse::<i32>()
+        .map_err(|_| AppError::new(
+            StatusCode::BAD_REQUEST,
+            "User ID must be an integer"
+        ))?;
+
+    match Entity::delete_by_id(user_id).exec(&conn).await {
+        Ok(_) => Ok(Json("User deleted")),
+        Err(_) => Err(AppError::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Database error"
+        )),
+    }
+}

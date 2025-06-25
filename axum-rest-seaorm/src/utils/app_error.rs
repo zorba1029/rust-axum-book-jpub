@@ -12,7 +12,7 @@ impl AppError {
 }
 
 impl IntoResponse for AppError {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         (self.code, Json(self.message.clone())).into_response()
     }
 }
