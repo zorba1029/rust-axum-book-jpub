@@ -11,7 +11,28 @@ use sea_orm::{
 
 use crate::entities::category::{ActiveModel, Column, Entity, Model};
 use crate::utils::app_error::AppError;
+use utoipa::{Path, ToSchema};
+// use utoipa::Path;
 
+// Wrapper functions for OpenAPI documentation
+#[utoipa::path(
+    get,
+    path = "/categories",
+    params(
+        ("name" = Option<String>, Query, description = "Category name to search")
+    ),
+    responses(
+        (status = 200, description = "List of categories", body = Vec<CategorySchema>),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Categories"
+)]
+pub async fn get_category_handler(
+    Query(params): Query<HashMap<String, String>>,
+    State(conn): State<DatabaseConnection>,
+) -> Result<Json<Vec<Model>>, AppError> {
+    get_category(Query(params), State(conn)).await
+}
 
 // SELECT
 pub async fn get_category(
@@ -33,9 +54,26 @@ pub async fn get_category(
     }
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, ToSchema)]
 pub struct UpsertModel {
     name: Option<String>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/categories",
+    request_body = UpsertCategorySchema,
+    responses(
+        (status = 200, description = "Category created", body = CategorySchema),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Categories"
+)]
+pub async fn post_category_handler(
+    State(conn): State<DatabaseConnection>,
+    Json(category): Json<UpsertModel>,
+) -> Result<Json<Model>, AppError> {
+    post_category(State(conn), Json(category)).await
 }
 
 // INSERT
@@ -55,6 +93,27 @@ pub async fn post_category(
             "Database error"
         )),
     }
+}
+
+#[utoipa::path(
+    delete,
+    path = "/categories",
+    params(
+        ("name" = String, Query, description = "Category name to delete")
+    ),
+    responses(
+        (status = 200, description = "Category deleted", body = String),
+        (status = 400, description = "Name not provided", body = ErrorResponse),
+        (status = 404, description = "Category not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Categories"
+)]
+pub async fn delete_category_handler(
+    State(conn): State<DatabaseConnection>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<&'static str>, AppError> {
+    delete_category(State(conn), Query(params)).await
 }
 
 // DELETE

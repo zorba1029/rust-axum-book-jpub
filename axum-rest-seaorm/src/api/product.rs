@@ -8,18 +8,46 @@ use sea_orm::{
     ModelTrait, QueryFilter,
 };
 use serde::Deserialize;
+use utoipa::ToSchema;
 
 use crate::{
     entities::product::{ActiveModel, Column, Entity, Model},
     utils::app_error::AppError,
 };
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct UpsertModel {
+    #[schema(example = 1)]
     id: Option<i32>,
+    #[schema(example = "Laptop")]
     title: Option<String>,
+    #[schema(example = 1200)]
     price: Option<i32>,
+    #[schema(example = "Electronics")]
     category: Option<String>,
+}
+
+// Wrapper functions for OpenAPI documentation
+#[utoipa::path(
+    get,
+    path = "/product",
+    params(
+        ("id" = Option<i32>, Query, description = "Product ID"),
+        ("title" = Option<String>, Query, description = "Product title to search"),
+        ("price" = Option<i32>, Query, description = "Product price"),
+        ("category" = Option<String>, Query, description = "Product category")
+    ),
+    responses(
+        (status = 200, description = "List of products", body = Vec<Model>),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Products"
+)]
+pub async fn get_product_handler(
+    State(conn): State<DatabaseConnection>,
+    Query(params): Query<UpsertModel>,
+) -> Result<Json<Vec<Model>>, AppError> {
+    get_product(State(conn), Query(params)).await
 }
 
 pub async fn get_product(
@@ -53,6 +81,24 @@ pub async fn get_product(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/product",
+    request_body = UpsertModel,
+    responses(
+        (status = 200, description = "Product created", body = Model),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Products"
+)]
+pub async fn post_product_handler(
+    State(conn): State<DatabaseConnection>,
+    Json(product): Json<UpsertModel>,
+) -> Result<Json<Model>, AppError> {
+    post_product(State(conn), Json(product)).await
+}
+
+// INSERT
 pub async fn post_product(
     State(conn): State<DatabaseConnection>,
     Json(product): Json<UpsertModel>,
@@ -73,6 +119,33 @@ pub async fn post_product(
     }
 }
 
+#[utoipa::path(
+    put,
+    path = "/product",
+    request_body = UpsertModel,
+    responses(
+        (status = 200, description = "Product updated", body = Model),
+        (status = 404, description = "Product not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Products"
+)]
+pub async fn put_product_handler(
+    State(conn): State<DatabaseConnection>,
+    Json(product): Json<UpsertModel>,
+) -> Result<Json<Model>, AppError> {
+    put_product(State(conn), Json(product)).await
+}
+
+// UPDATE
+// PUT /product
+// -- body 예:
+//{
+//     "id": 1,
+//     "title": "test",
+//     "price": 100,
+//     "category": "test"
+// }
 pub async fn put_product(
     State(conn): State<DatabaseConnection>,
     Json(product): Json<UpsertModel>,
@@ -105,6 +178,30 @@ pub async fn put_product(
     }
 }
 
+#[utoipa::path(
+    delete,
+    path = "/product",
+    params(
+        ("id" = Option<i32>, Query, description = "Product ID"),
+        ("title" = Option<String>, Query, description = "Product title"),
+        ("price" = Option<i32>, Query, description = "Product price"),
+        ("category" = Option<String>, Query, description = "Product category")
+    ),
+    responses(
+        (status = 200, description = "Product deleted", body = String),
+        (status = 404, description = "Product not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Products"
+)]
+pub async fn delete_product_handler(
+    State(conn): State<DatabaseConnection>,
+    Query(params): Query<UpsertModel>,
+) -> Result<Json<&'static str>, AppError> {
+    delete_product(State(conn), Query(params)).await
+}
+
+// DELETE /product?id=1&title=test&price=100&category=test
 pub async fn delete_product(
     State(conn): State<DatabaseConnection>,
     Query(params): Query<UpsertModel>,

@@ -10,15 +10,38 @@ use sea_orm::{
 };
 use crate::entities::users::{ActiveModel, Column, Entity, Model};
 use crate::utils::app_error::AppError;
+use utoipa::ToSchema;
 
+// Wrapper functions for OpenAPI documentation
+#[utoipa::path(
+    get,
+    path = "/user",
+    params(
+        ("id" = Option<String>, Query, description = "User ID"),
+        ("username" = Option<String>, Query, description = "Username to search")
+    ),
+    responses(
+        (status = 200, description = "User found", body = Model),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 400, description = "Invalid parameters", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Users"
+)]
+pub async fn get_user_handler(
+    Query(params): Query<QueryParams>,
+    State(conn): State<DatabaseConnection>,
+) -> Result<Json<Model>, AppError> {
+    get_user(Query(params), State(conn)).await
+}
 
 pub async fn get_user(
-    Query(params): Query<HashMap<String, String>>,
+    Query(params): Query<QueryParams>,
     State(conn): State<DatabaseConnection>,
 ) -> Result<Json<Model>, AppError> {
     let mut condition = Condition::any();
 
-    if let Some(id) = params.get("id") {
+    if let Some(id) = &params.id {
         match id.parse::<i32>() {
             Ok(parsed_id) => condition = condition.add(Column::Id.eq(parsed_id)),
             Err(_) => {
@@ -29,12 +52,12 @@ pub async fn get_user(
             }
         }
     }
-    if let Some(username) = params.get("username") {
+    if let Some(username) = &params.username {
         condition = condition.add(Column::Username.contains(username));
     }
     println!("condition: {:?}", condition);
-    println!("id: {:?}", params.get("id"));
-    println!("username: {:?}", params.get("username"));
+    println!("id: {:?}", &params.id);
+    println!("username: {:?}", &params.username);
     
     // let user = Entity::find()
     //     .filter(condition)
@@ -59,6 +82,27 @@ pub async fn get_user(
             "Database error"
         )),
     }
+}
+
+#[utoipa::path(
+    get,
+    path = "/users",
+    params(
+        ("id" = Option<String>, Query, description = "User ID"),
+        ("username" = Option<String>, Query, description = "Username to search")
+    ),
+    responses(
+        (status = 200, description = "List of users", body = Vec<Model>),
+        (status = 400, description = "Invalid parameters", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Users"
+)]
+pub async fn get_users_handler(
+    State(conn): State<DatabaseConnection>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<Vec<Model>>, AppError> {
+    get_users(State(conn), Query(params)).await
 }
 
 pub async fn get_users(
@@ -100,11 +144,46 @@ pub async fn get_users(
     }
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, ToSchema)]
+pub struct QueryParams {
+    #[schema(example = 1)]
+    pub id: Option<String>,
+    #[schema(example = "john")]
+    pub username: Option<String>,
+}
+
+#[derive(serde::Deserialize, ToSchema)]
+pub struct DeleteParams {
+    #[schema(example = "1")]
+    pub id: String,
+}
+
+#[derive(serde::Deserialize, ToSchema)]
 pub struct UpsertModel {
+    #[schema(example = 1)]
     id: Option<i32>,
+    #[schema(example = "john_doe")]
     username: Option<String>,
+    #[schema(example = "secure_password")]
     password: Option<String>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/users",
+    request_body = UpsertModel,
+    responses(
+        (status = 200, description = "User created", body = UserSchema),
+        (status = 400, description = "Invalid input", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Users"
+)]
+pub async fn post_user_handler(
+    State(conn): State<DatabaseConnection>,
+    Json(user): Json<UpsertModel>,
+) -> Result<Json<Model>, AppError> {
+    post_user(State(conn), Json(user)).await
 }
 
 pub async fn post_user(
@@ -131,6 +210,25 @@ pub async fn post_user(
             "Database error"
         )),
     }
+}
+
+#[utoipa::path(
+    put,
+    path = "/users",
+    request_body = UpsertModel,
+    responses(
+        (status = 200, description = "User updated", body = UserSchema),
+        (status = 400, description = "Invalid input", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Users"
+)]
+pub async fn put_user_handler(
+    State(conn): State<DatabaseConnection>,
+    Json(user): Json<UpsertModel>,
+) -> Result<Json<Model>, AppError> {
+    put_user(State(conn), Json(user)).await
 }
 
 pub async fn put_user(
@@ -170,6 +268,26 @@ pub async fn put_user(
             "Database error"
         )),
     }
+}
+
+#[utoipa::path(
+    delete,
+    path = "/users",
+    params(
+        ("id" = String, Query, description = "User ID to delete")
+    ),
+    responses(
+        (status = 200, description = "User deleted", body = String),
+        (status = 400, description = "Invalid parameters", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    tag = "Users"
+)]
+pub async fn delete_user_handler(
+    State(conn): State<DatabaseConnection>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<&'static str>, AppError> {
+    delete_user(State(conn), Query(params)).await
 }
 
 pub async fn delete_user(
