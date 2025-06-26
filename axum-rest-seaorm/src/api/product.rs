@@ -31,6 +31,9 @@ pub struct UpsertModel {
 #[utoipa::path(
     get,
     path = "/product",
+    security(
+        ("bearer_auth" = [])
+    ),
     params(
         ("id" = Option<i32>, Query, description = "Product ID"),
         ("title" = Option<String>, Query, description = "Product title to search"),
@@ -84,6 +87,9 @@ pub async fn get_product(
 #[utoipa::path(
     post,
     path = "/product",
+    security(
+        ("bearer_auth" = [])
+    ),
     request_body = inline(UpsertModel),
     responses(
         (status = 200, description = "Product created", body = Model),
@@ -122,6 +128,9 @@ pub async fn post_product(
 #[utoipa::path(
     put,
     path = "/product",
+    security(
+        ("bearer_auth" = [])
+    ),
     request_body = inline(UpsertModel),
     responses(
         (status = 200, description = "Product updated", body = Model),
@@ -181,6 +190,9 @@ pub async fn put_product(
 #[utoipa::path(
     delete,
     path = "/product",
+    security(
+        ("bearer_auth" = [])
+    ),
     params(
         ("id" = Option<i32>, Query, description = "Product ID"),
         ("title" = Option<String>, Query, description = "Product title"),

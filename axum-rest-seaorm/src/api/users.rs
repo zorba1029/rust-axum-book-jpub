@@ -8,12 +8,16 @@ use sea_orm::{
 };
 use crate::entities::users::{ActiveModel, Column, Entity, Model};
 use crate::utils::app_error::AppError;
+use crate::utils::hash::hash_password;
 use utoipa::ToSchema;
 
 // Wrapper functions for OpenAPI documentation
 #[utoipa::path(
     get,
     path = "/user",
+    security(
+        ("bearer_auth" = [])
+    ),
     params(
         ("id" = Option<String>, Query, description = "User ID"),
         ("username" = Option<String>, Query, description = "Username to search")
@@ -85,6 +89,9 @@ pub async fn get_user(
 #[utoipa::path(
     get,
     path = "/users",
+    security(
+        ("bearer_auth" = [])
+    ),
     params(
         ("id" = Option<String>, Query, description = "User ID"),
         ("username" = Option<String>, Query, description = "Username to search")
@@ -159,32 +166,35 @@ pub struct DeleteParams {
 #[derive(serde::Deserialize, ToSchema)]
 pub struct UpsertModel {
     #[schema(example = 1)]
-    id: Option<i32>,
+    pub id: Option<i32>,
     #[schema(example = "john_doe")]
-    username: Option<String>,
+    pub username: Option<String>,
     #[schema(example = "secure_password")]
-    password: Option<String>,
+    pub password: Option<String>,
 }
 
 #[utoipa::path(
     post,
-    path = "/users",
+    path = "/auth/signup",
+    security(
+        ("bearer_auth" = [])
+    ),
     request_body = inline(UpsertModel),
     responses(
         (status = 200, description = "User created", body = Model),
         (status = 400, description = "Invalid input", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse)
     ),
-    tag = "Users"
+    tag = "Auth"
 )]
 pub async fn post_user_handler(
     State(conn): State<DatabaseConnection>,
     Json(user): Json<UpsertModel>,
 ) -> Result<Json<Model>, AppError> {
-    post_user(State(conn), Json(user)).await
+    create_user(State(conn), Json(user)).await
 }
 
-pub async fn post_user(
+pub async fn create_user(
     State(conn): State<DatabaseConnection>,
     Json(user): Json<UpsertModel>,
 ) -> Result<Json<Model>, AppError> {
@@ -195,10 +205,12 @@ pub async fn post_user(
         ));
     }
 
+    let hashed_password = hash_password(&user.password.unwrap())?;
+
     let new_user = ActiveModel {
         id: ActiveValue::NotSet,
         username: ActiveValue::Set(user.username.unwrap()),
-        password: ActiveValue::Set(user.password.unwrap()),
+        password: ActiveValue::Set(hashed_password),
     };
 
     match new_user.insert(&conn).await {
@@ -213,6 +225,9 @@ pub async fn post_user(
 #[utoipa::path(
     put,
     path = "/users",
+    security(
+        ("bearer_auth" = [])
+    ),
     request_body = inline(UpsertModel),
     responses(
         (status = 200, description = "User updated", body = Model),
@@ -271,6 +286,9 @@ pub async fn put_user(
 #[utoipa::path(
     delete,
     path = "/users",
+    security(
+        ("bearer_auth" = [])
+    ),
     params(
         ("id" = String, Query, description = "User ID to delete")
     ),
@@ -292,6 +310,10 @@ pub async fn delete_user(
     State(conn): State<DatabaseConnection>,
     Query(params): Query<DeleteParams>,
 ) -> Result<Json<&'static str>, AppError> {
+    //-->> TimeoutLayer testing
+    // tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+    //<<--- TimeoutLayer testing
+
     let user_id = params.id.parse::<i32>()
         .map_err(|_| AppError::new(
             StatusCode::BAD_REQUEST,
@@ -316,3 +338,28 @@ pub async fn delete_user(
         )),
     }
 }
+
+// -- TimeoutLayer Testing --
+// * Preparing request to http://localhost:8000/users?id=12
+// * Current time is 2025-06-26T03:51:25.572Z
+// * Enable automatic URL encoding
+// * Using default HTTP version
+// * Enable timeout of 30000ms
+// * Enable SSL validation
+// * Found bundle for host: 0x11405114280 [serially]
+// * Can not multiplex, even if we wanted to
+// * Re-using existing connection #1 with host localhost
+// * Connected to localhost (127.0.0.1) port 8000 (#1)
+
+// > DELETE /users?id=12 HTTP/1.1
+// > Host: localhost:8000
+// > User-Agent: insomnia/11.2.0
+// > Accept: */*
+
+// * Mark bundle as not supporting multiuse
+
+// < HTTP/1.1 408 Request Timeout
+// < content-length: 0
+// < date: Thu, 26 Jun 2025 03:51:28 GMT
+
+// * Connection #1 to host localhost left intact

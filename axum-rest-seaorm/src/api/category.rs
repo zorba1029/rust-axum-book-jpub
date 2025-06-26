@@ -17,6 +17,9 @@ use utoipa::ToSchema;
 #[utoipa::path(
     get,
     path = "/categories",
+    security(
+        ("bearer_auth" = [])
+    ),
     params(
         ("name" = Option<String>, Query, description = "Category name to search")
     ),
@@ -61,6 +64,9 @@ pub struct UpsertModel {
 #[utoipa::path(
     post,
     path = "/categories",
+    security(
+        ("bearer_auth" = [])
+    ),
     request_body = inline(UpsertModel),
     responses(
         (status = 200, description = "Category created", body = Model),
@@ -97,6 +103,9 @@ pub async fn post_category(
 #[utoipa::path(
     delete,
     path = "/categories",
+    security(
+        ("bearer_auth" = [])
+    ),
     params(
         ("name" = String, Query, description = "Category name to delete")
     ),
