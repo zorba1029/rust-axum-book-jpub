@@ -1,9 +1,13 @@
 use std::sync::Arc;
 use axum::{
+    body::Body,
     extract::{
         ws::{Message, WebSocket},
         State,WebSocketUpgrade,
     },
+    http::{HeaderMap, Request, StatusCode},
+    middleware::{self, Next},
+    response::Response,
     response::IntoResponse,
     routing::get,
     Router,
@@ -118,6 +122,20 @@ async fn receive_from_websocket(
     }
 }
 
+async fn authenticate(
+    headers: HeaderMap,
+    request: Request<Body>,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    if headers.get("Authorization")
+        .map(|value| value == "Bearer token")
+        .unwrap_or(false) 
+    {
+        Ok(next.run(request).await)
+    } else {
+        Err(StatusCode::UNAUTHORIZED)
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -127,6 +145,7 @@ async fn main() {
     };
 
     let app = Router::new().route("/ws", get(websocket_handler))
+        .route_layer(middleware::from_fn(authenticate))
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
