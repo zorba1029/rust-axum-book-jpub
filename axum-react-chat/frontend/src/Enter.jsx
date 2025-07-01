@@ -33,9 +33,21 @@ function Enter() {
         />
         <Button
           colorScheme="blue"
-          onClick={() => {
-            window.sessionStorage.setItem("username", username);
-            navigate("/rooms");
+          onClick={async () => {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ username }),
+            });
+
+            if (response.ok) {
+              window.sessionStorage.setItem("username", username);
+              navigate("/rooms");
+            } else {
+              alert("Failed to create user.");
+            }
           }}
         >
           Enter

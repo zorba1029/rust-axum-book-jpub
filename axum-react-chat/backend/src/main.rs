@@ -7,10 +7,6 @@ use api::{
     state::AppState,
     user::{delete_user, get_user, post_user, put_user},
 };
-// use axum::{
-//     routing::{get, post},
-//     Router,
-// };
 use shuttle_axum::axum::{
     routing::{get, post},
     Router,
