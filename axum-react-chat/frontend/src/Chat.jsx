@@ -21,7 +21,7 @@ const Chat = () => {
   const roomId = useParams().roomId;
   useEffect(() => {
     console.log("[Chat.jsx] username", username);
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/chat?room_id=${roomId}`).then(
+    fetch(`/chat?room_id=${roomId}`).then(
       (response) => {
         response.json().then((data) => {
           console.log("[Chat.jsx] data", data);
@@ -31,7 +31,7 @@ const Chat = () => {
     );
 
     const eventSource = new EventSource(
-      `${import.meta.env.VITE_BACKEND_URL}/chat/subscribe`
+      `/chat/subscribe`
     );
 
     eventSource.onmessage = (event) => {
@@ -47,7 +47,7 @@ const Chat = () => {
 
   const sendMessage = async () => {
     console.log("sendMessage: ", roomId);
-    await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/send`, {
+    await fetch(`/chat/send`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

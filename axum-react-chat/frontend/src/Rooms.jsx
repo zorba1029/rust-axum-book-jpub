@@ -73,14 +73,14 @@ function Rooms() {
   const username = useContext(UserContext);
 
   function getRoom() {
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/room`).then((response) => {
+    fetch(`/room`).then((response) => {
       response.json().then((data) => {
         setRooms(data);
       });
     });
   }
   function deleteRoom(room_id) {
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/room?id=${room_id}`, {
+    fetch(`/room?id=${room_id}`, {
       method: "DELETE",
       headers: {
         "Access-Control-Allow-Origin": "*",
@@ -89,7 +89,7 @@ function Rooms() {
   }
 
   function createRoom() {
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/room`, {
+    fetch(`/room`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

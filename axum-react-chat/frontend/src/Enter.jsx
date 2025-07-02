@@ -34,7 +34,7 @@ function Enter() {
         <Button
           colorScheme="blue"
           onClick={async () => {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, {
+            const response = await fetch(`/user`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
