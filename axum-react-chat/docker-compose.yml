@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: chat_db
+    restart: always
+    environment:
+      - POSTGRES_USER=axum
+      - POSTGRES_PASSWORD=1234
+      - POSTGRES_DB=axum_react_chat
+    ports:
+      # 로컬에서 DB에 직접 접속하여 확인할 수 있도록 포트를 노출합니다.
+      - "5432:5432"
+    volumes:
+      # 컨테이너가 삭제되어도 데이터가 유지되도록 볼륨을 설정합니다.
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: axum_chat_app
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    environment:
+      # Docker Compose 네트워크 내에서 'db'라는 서비스 이름으로 DB에 접속합니다.
+      - DATABASE_URL=postgres://axum:1234@db:5432/axum_react_chat
+
+volumes:
+  postgres_data: 
+
+# docker-compose up --build
+# docker compose up -d
+# docker compose down

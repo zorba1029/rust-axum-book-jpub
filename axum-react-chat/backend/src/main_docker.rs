@@ -10,6 +10,7 @@ use shuttle_axum::axum;
 use axum;
 
 use db::init_db;
+use migration::{Migrator, MigratorTrait};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 #[tokio::main]
@@ -23,6 +24,7 @@ async fn main() {
         .ok();
 
     let db = init_db().await;
+    Migrator::up(&db, None).await.unwrap();
     let app = app::create_router(db);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
@@ -31,5 +33,6 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-// > cargo run --bin docker
-// > cargo run --bin docker --features shuttle
+// > cargo build --bin docker
+// -- run
+// > docker-compose up --build
