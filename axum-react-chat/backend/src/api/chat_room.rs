@@ -1,9 +1,17 @@
 use std::collections::HashMap;
 
+#[cfg(feature = "shuttle")]
 use shuttle_axum::axum::{
     extract::{Query, State},
     Json,
 };
+
+#[cfg(not(feature = "shuttle"))]
+use axum::{
+    extract::{Query, State},
+    Json,
+};
+
 use serde::{Deserialize, Serialize};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, Condition, DatabaseConnection,

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[cfg(feature = "shuttle")]
 use shuttle_axum::axum::{
     extract::{Query, State},
     response::{
@@ -8,6 +9,17 @@ use shuttle_axum::axum::{
     },
     Json,
 };
+
+#[cfg(not(feature = "shuttle"))]
+use axum::{
+    extract::{Query, State},
+    response::{
+        sse::{Event, KeepAlive, Sse},
+        IntoResponse,
+    },
+    Json,
+};
+
 use futures_util::stream::StreamExt;
 use serde_json::json;
 use serde::Deserialize;
@@ -112,7 +124,6 @@ pub async fn send(
 }
 
 pub async fn get_chat(
-    // State(conn): State<DatabaseConnection>,
     State(app_state): State<AppState>,
     Query(params): Query<HashMap<String, String>>,
 ) -> Json<Vec<ChatModel>> {
