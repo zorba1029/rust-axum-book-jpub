@@ -47,7 +47,9 @@ pub async fn get_room(
         .all(&conn)
         .await
         .unwrap();
-
+    
+    // DB에 특정 room id에 대한 참여자 형식이 ["participant1", "participant2"] 형태로 저장되어 있어서,
+    // 이 참여자들을 Vec<String> 형태로 변환해야 한다.
     let mut new_rooms: Vec<NewRoom> = Vec::new();
 
     for room in rooms {
